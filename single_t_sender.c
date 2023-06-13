@@ -40,9 +40,7 @@ int initSocket(const char* ifname) {
 
 // Function to send a CAN message
 void sendMessage(int sock, unsigned int id, unsigned char* data, unsigned char dlc) {
-
     struct can_frame frame;
-
     frame.can_id = id;
     frame.can_dlc = dlc;
     memcpy(frame.data, data, dlc);
@@ -53,15 +51,15 @@ void sendMessage(int sock, unsigned int id, unsigned char* data, unsigned char d
 }
 
 int main() {
-
     int sock;
-
-    unsigned int id = 0x66;
-    unsigned char data[8] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
+    unsigned int index = 0;
+    unsigned int id_list[] = {0x100, 0x200, 0x300, 0x400, 0x500};  // List of valid CAN message IDs
+								   // hopping thought those addresses of IDs.
+								   //
+    unsigned int id_list_size = sizeof(id_list) / sizeof(id_list[0]);
+    unsigned char data[8] = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07};
     unsigned char dlc = sizeof(data);
-	//delay in us.
     unsigned int delay;
-    delay = 0x20000;
 
     // Initialize the CAN socket
     if ((sock = initSocket(CAN_INTERFACE)) < 0) {
@@ -70,8 +68,17 @@ int main() {
 
     while (1) {
         // Send the CAN message
-        sendMessage(sock, id, data, dlc);
-        usleep(delay);
+        sendMessage(sock, id_list[index], data, dlc);
+        // Increment the index
+        index++;
+
+        // Wrap around to the beginning if the index exceeds the list size
+        if (index >= id_list_size) {
+            index = 0;
+        }
+	
+        // Delay between messages
+        usleep(500000);
     }
 
     return 0;
