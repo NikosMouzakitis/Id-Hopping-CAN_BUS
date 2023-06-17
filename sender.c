@@ -8,6 +8,7 @@
 #include <net/if.h>
 #include <linux/can.h>
 #include <linux/can/raw.h>
+
 #include <pthread.h>
 
 #define CAN_INTERFACE "vcan0"        // Virtual CAN interface name
@@ -57,23 +58,23 @@ void sendMessage(int sock, unsigned int id, unsigned char* data, unsigned char d
 void* receiveThread(void* arg) {
     printf("receiveThread runs on sender app.\n");
     int sock = *((int*)arg);
+    int ret;
     struct can_frame frame;
 
     while (1) {
 
-	pthead_mutex_lock(&vcan0Mutex);
-        if (read(sock, &frame, sizeof(struct can_frame)) > 0) {
-            // Process received CAN message
-            perror("Socket read failed");
-            break;
-        }
+	if(!pthread_mutex_trylock(&vcan0Mutex)) {
+		//thread got the lock.
 
-        printf("Received CAN message: ID=0x%03X, DLC=%d, Data=", frame.can_id, frame.can_dlc);
+		ret = read(sock, &frame, sizeof(struct can_frame));
+        	pthread_mutex_unlock(&vcan0Mutex);
+        	printf("Received CAN message: ID=0x%03X, DLC=%d, Data=", frame.can_id, frame.can_dlc);
 	
-	for (int i = 0; i < frame.can_dlc; ++i) 
-            printf("%02X ", frame.data[i]);
-        printf("\n");
-        
+		for (int i = 0; i < frame.can_dlc; ++i) 
+       			printf("%02X ", frame.data[i]);
+        	printf("\n");
+
+	}
     }
     return NULL;
 }
@@ -93,9 +94,9 @@ void* sendThread(void* arg) {
 
     while (1) {
         // Send the CAN message
-	pthead_mutex_lock(&vcan0Mutex);
+	pthread_mutex_lock(&vcan0Mutex);
         sendMessage(sock, id_list[index], data, dlc);
-	pthead_mutex_unlock(&vcan0Mutex);
+	pthread_mutex_unlock(&vcan0Mutex);
         // Increment the index
         index++;
 
@@ -112,16 +113,11 @@ void* sendThread(void* arg) {
 
 int main() {
     int sock;
+
     pthread_t receiveThreadId, sendThreadId;
 
     // Initialize the CAN socket
     if ((sock = initSocket(CAN_INTERFACE)) < 0) {
-        return 1;
-    }
-
-    // Create the receive thread
-    if (pthread_create(&receiveThreadId, NULL, receiveThread, &sock) != 0) {
-        perror("Failed to create receive thread");
         return 1;
     }
 
@@ -131,6 +127,11 @@ int main() {
         return 1;
     }
 
+    // Create the receive thread , must ensure is non-blocking call.
+    if (pthread_create(&receiveThreadId, NULL, receiveThread, &sock) != 0) {
+        perror("Failed to create receive thread");
+        return 1;
+    }
     // Wait for the threads to finish
     pthread_join(receiveThreadId, NULL);
     pthread_join(sendThreadId, NULL);

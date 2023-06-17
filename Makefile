@@ -1,5 +1,5 @@
 all:
-	gcc sender.c -o sender
+	gcc sender.c -o sender -lpthread
 	gcc receiver.c -o receiver
 	gcc injecter.c -o injecter 
 
