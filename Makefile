@@ -1,8 +1,5 @@
 all:
-	gcc sender.c -o sender -lpthread
-	gcc receiver.c -o receiver
-	gcc injecter.c -o injecter 
-
+	gcc ss1.c -o ss1 -lpthread
 clean:
-	rm sender receiver injecter
+	rm ss1
 
