@@ -85,7 +85,7 @@ void* receiveThread(void* arg) {
 		pthread_mutex_unlock(&vcan0Mutex);
 
 		if(ret == -1)
-			break;
+			continue;
 
         	printf("Received CAN message: ID=0x%03X, DLC=%d, Data=", frame.can_id, frame.can_dlc);
 	
@@ -95,6 +95,7 @@ void* receiveThread(void* arg) {
 
 	}
     }
+    printf("Debug receiver thread exits..\n");
     return NULL;
 }
 
