@@ -175,7 +175,6 @@ int main() {
 
     // fetch the data to transmit.
     initialize_test_data();
-    while(1);
 
     // Initialize the CAN socket
     if ((sock = initSocket(CAN_INTERFACE)) < 0) {
