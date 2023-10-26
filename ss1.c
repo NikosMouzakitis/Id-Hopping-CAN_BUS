@@ -14,13 +14,19 @@
 
 #define CAN_INTERFACE "vcan0"        // Virtual CAN interface name
 
-// Function to initialize the CAN socket
 
+
+// Function to initialize the CAN socket
 pthread_mutex_t vcan0Mutex;  // Mutex for vcan0
 
 //secret key that are incorporated for the ID Hopping of the secure nodes.
 uint32_t secretkey1 = 0x4432;
 uint32_t secretkey2 = 0xa83b;
+
+//Necessary to read the data to transmit on the virtual CAN.
+FILE *data_file;
+char *sine_data="sine_test_data.txt.txt";
+unsigned int data[360];
 
 //structure holding the possible receptions of secure IDs 
 //of the nodes that follow the ID hopping in the network.
@@ -136,10 +142,40 @@ void* sendThread(void* arg) {
     return NULL;
 }
 
+int initialize_test_data(void)
+{
+
+    data_file = fopen(sine_data,"r");
+
+    if(data_file == NULL) {
+	    printf("Error opening the test data file\n");
+	    return 1;
+    }
+
+    int cnt = 0;
+
+    while(cnt < 360 && fscanf(data_file, "%d",&data[cnt]) == 1) {
+	    cnt++;
+    }
+  
+    fclose(data_file);
+/*
+    printf("read %d integers\n",cnt);
+    for(int i = 0; i < cnt; i++)
+	    printf("%d   \n", data[i]);
+*/
+    return 0;
+}
+
+
 int main() {
     int sock;
 
     pthread_t receiveThreadId, sendThreadId;
+
+    // fetch the data to transmit.
+    initialize_test_data();
+    while(1);
 
     // Initialize the CAN socket
     if ((sock = initSocket(CAN_INTERFACE)) < 0) {
