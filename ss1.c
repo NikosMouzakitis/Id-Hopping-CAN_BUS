@@ -15,25 +15,19 @@
 #define CAN_INTERFACE "vcan0"        // Virtual CAN interface name
 
 
-
 // Function to initialize the CAN socket
 pthread_mutex_t vcan0Mutex;  // Mutex for vcan0
-
-//secret key that are incorporated for the ID Hopping of the secure nodes.
-uint32_t secretkey1 = 0x4432;
-uint32_t secretkey2 = 0xa83b;
 
 //Necessary to read the data to transmit on the virtual CAN.
 FILE *data_file;
 char *sine_data="sine_test_data.txt.txt";
 unsigned int data[360];
 
-//structure holding the possible receptions of secure IDs 
-//of the nodes that follow the ID hopping in the network.
-struct secure_id_state {
-	uint32_t id1;
-	uint32_t id2;
-};
+
+//Dynamic ID Generation part.(DIDG)
+uint32_t didg_key1 = 0x4432; // key used to initialize the 
+			     // algorithm for the 1st secure node.
+
 
 int initSocket(const char* ifname) {
     int s;
@@ -111,14 +105,34 @@ void* sendThread(void* arg) {
     int sock = *((int*)arg);
     unsigned int index = 0;
     //structure holding offsets specific for the nodes ID Hopping.
-    unsigned int id_list[] = {0x100, 0x200, 0x300, 0x400, 0x500};  // List of valid CAN message IDs
+    //utilization of the DIDG scheme.
+    
+    // List of valid CAN message IDs to be filled.
+    unsigned int id_list[] = {0x100, 0x200, 0x300, 0x400, 0x500};  
     unsigned int id_list_size = sizeof(id_list) / sizeof(id_list[0]);
+    // data sent on the vcan0 
     unsigned char data[8] = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07};
     unsigned char dlc = sizeof(data);
     unsigned int delay;
     uint32_t id_prefix_ss1 = 0x13;
 
+    /*IDs start with 0b'110'*/
+    uint8_t upper_part3bit = 0x6;     
+    uint8_t lower_part8bit = 0x0;
+
     printf("sendThread runs on sender app.\n");
+
+    
+    //Calculate IDs based on the Dynamic ID Generation algorithm.
+
+    for(int i = 0; i < id_list_size; i++)
+    {
+	//a function to create 8bit lower part of the id.
+	lower_part8bit = (((didg_key1 << i)) );
+	id_list[i] = (upper_part3bit << 8) | lower_part8bit;	
+//	printf("id_list[%d] = %x\n", i, id_list[i]);
+    }
+
 
     while (1) {
 	//calculation of the new ID to use according to the ID Hop mechanism.
@@ -126,7 +140,7 @@ void* sendThread(void* arg) {
         // Send the CAN message
 	pthread_mutex_lock(&vcan0Mutex);
         sendMessage(sock, id_prefix_ss1 + id_list[index], data, dlc);
-	printf("msg sent\n");
+	printf("Tx success\n");
 	pthread_mutex_unlock(&vcan0Mutex);
         // Increment the index
         index++;
