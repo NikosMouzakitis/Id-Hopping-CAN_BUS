@@ -21,7 +21,7 @@ pthread_mutex_t vcan0Mutex;  // Mutex for vcan0
 //Necessary to read the data to transmit on the virtual CAN.
 FILE *data_file;
 char *sine_data="sine_test_data.txt.txt";
-unsigned int data[360];
+unsigned int sdata[360];
 
 
 //Dynamic ID Generation part.(DIDG)
@@ -55,6 +55,7 @@ int initSocket(const char* ifname) {
 
 // Function to send a CAN message
 void sendMessage(int sock, unsigned int id, unsigned char* data, unsigned char dlc) {
+
     struct can_frame frame;
     frame.can_id = id;
     frame.can_dlc = dlc;
@@ -63,6 +64,8 @@ void sendMessage(int sock, unsigned int id, unsigned char* data, unsigned char d
     if (write(sock, &frame, sizeof(struct can_frame)) != sizeof(struct can_frame)) {
         perror("Socket write failed");
     }
+
+    printf("Tx success data: %x\n");
 }
 
 // Thread function for receiving CAN messages
@@ -119,7 +122,9 @@ void* sendThread(void* arg) {
     /*IDs start with 0b'110'*/
     uint8_t upper_part3bit = 0x6;     
     uint8_t lower_part8bit = 0x0;
-
+    /* will be used modulo 360 in this demonstration */
+    int data_index = 0 ;
+   
     printf("sendThread runs on sender app.\n");
 
     
@@ -133,18 +138,25 @@ void* sendThread(void* arg) {
 //	printf("id_list[%d] = %x\n", i, id_list[i]);
     }
 
-
     while (1) {
-	//calculation of the new ID to use according to the ID Hop mechanism.
+
+        // fill the data field.
+        data[0] =  (unsigned char) ( (sdata[data_index] >> 56) && 0xff);
+        data[1] =  (unsigned char) ( (sdata[data_index] >> 48) && 0xff); 
+        data[2] =  (unsigned char) ( (sdata[data_index] >> 40) && 0xff); 
+        data[3] =  (unsigned char) ( (sdata[data_index] >> 32) && 0xff); 
+        data[4] =  (unsigned char) ( (sdata[data_index] >> 24) && 0xff); 
+        data[5] =  (unsigned char) ( (sdata[data_index] >> 16) && 0xff); 
+        data[6] =  (unsigned char) ( (sdata[data_index] >> 8)  && 0xff); 
+        data[7] =  (unsigned char) ( (sdata[data_index] >> 0)  && 0xff); 
 
         // Send the CAN message
 	pthread_mutex_lock(&vcan0Mutex);
         sendMessage(sock, id_prefix_ss1 + id_list[index], data, dlc);
-	printf("Tx success\n");
 	pthread_mutex_unlock(&vcan0Mutex);
-        // Increment the index
+        // Increment the index and the data_index
         index++;
-
+        data_index++;
         // Wrap around to the beginning if the index exceeds the list size
         if (index >= id_list_size) {
             index = 0;
@@ -168,7 +180,7 @@ int initialize_test_data(void)
 
     int cnt = 0;
 
-    while(cnt < 360 && fscanf(data_file, "%d",&data[cnt]) == 1) {
+    while(cnt < 360 && fscanf(data_file, "%d",&sdata[cnt]) == 1) {
 	    cnt++;
     }
   
@@ -176,7 +188,7 @@ int initialize_test_data(void)
 /*
     printf("read %d integers\n",cnt);
     for(int i = 0; i < cnt; i++)
-	    printf("%d   \n", data[i]);
+	    printf("%d   \n", sdata[i]);
 */
     return 0;
 }
