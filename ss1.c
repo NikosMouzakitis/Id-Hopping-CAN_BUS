@@ -154,7 +154,8 @@ void* sendThread(void* arg) {
 		// Wrap around to the beginning if the index exceeds the list size
 		if(index >= id_list_size)
 			index = 0;
-		
+	        if(data_index>=360)
+			data_index = 0;	
 
 		// Delay between messages
 		usleep(50000);
