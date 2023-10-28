@@ -25,3 +25,7 @@ impersonated since the last
 periodic transmission, 
 enhancing trust and preventing unauthorized
 access.
+
+# Demo of a sine wave transmission
+a node which follows the DIDG algorithm, transmits a sine wave over the vcan0, and a python program listening to 'vcan0' animates the data.
+![img](https://github.com/NikosMouzakitis/Id-Hopping-CAN_BUS/blob/main/%CE%A3%CF%84%CE%B9%CE%B3%CE%BC%CE%B9%CF%8C%CF%84%CF%85%CF%80%CE%BF%20%CE%BF%CE%B8%CF%8C%CE%BD%CE%B7%CF%82%20(190).png)
