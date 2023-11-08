@@ -16,7 +16,8 @@ for _ in range(num_messages):
    if message_id in exclude_list:
        message_id = message_id + 0x1  # don't let ID be a secure one.
 
-   message=can.Message(arbitration_id=message_id, data = [0x1, 0x2, 0x3,0x4], extended_id = False)
+   message=can.Message(arbitration_id=message_id, data = [0x1, 0x2, 0x3,0x4,0x5,0x6,0x7,0x8], extended_id = False)
+
    try:
        bus.send(message)
    except can.CanError:
