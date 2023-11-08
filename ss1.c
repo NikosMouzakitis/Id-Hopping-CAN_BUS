@@ -158,7 +158,7 @@ void* sendThread(void* arg) {
 			data_index = 0;	
 
 		// Delay between messages
-		usleep(50000);
+		usleep(200000);
 	}
 	return NULL;
 }
